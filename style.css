@@ -1,0 +1,387 @@
+/* ============================================================
+   Backrooms: Path Tracing Experience — Stylesheet
+   ============================================================ */
+
+/* Google Fonts — Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── CSS Custom Properties ──────────────────────────────────── */
+:root {
+  --color-gold: #f5e6a3;
+  --color-gold-dim: #c4b576;
+  --color-gold-glow: rgba(245, 230, 163, 0.15);
+  --color-bg: #0a0a08;
+  --color-surface: rgba(18, 16, 10, 0.75);
+  --color-surface-border: rgba(245, 230, 163, 0.08);
+  --color-text: #d4cbb3;
+  --color-text-muted: #7a7565;
+  --color-kbd-bg: rgba(245, 230, 163, 0.08);
+  --color-kbd-border: rgba(245, 230, 163, 0.15);
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --transition-smooth: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-bg);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Canvas ─────────────────────────────────────────────────── */
+#game-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* ── Crosshair ──────────────────────────────────────────────── */
+#crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  mix-blend-mode: difference;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* ── Instructions Panel ─────────────────────────────────────── */
+#instructions {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  background: rgba(5, 5, 3, 0.6);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    visibility 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+#instructions.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.instructions-inner {
+  position: relative;
+  padding: 3rem 3.5rem;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+
+  /* Glassmorphism */
+  background: var(--color-surface);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 4px;
+
+  /* Subtle outer glow */
+  box-shadow:
+    0 0 80px rgba(245, 230, 163, 0.03),
+    0 24px 48px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(245, 230, 163, 0.04);
+
+  /* Entry animation */
+  animation: panelFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes panelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Title */
+.title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: var(--color-gold);
+  margin-bottom: 0.4rem;
+  text-shadow: 0 0 30px rgba(245, 230, 163, 0.15);
+  line-height: 1.2;
+}
+
+/* Subtitle */
+.subtitle {
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0;
+}
+
+/* Divider */
+.divider {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gold-dim),
+    transparent
+  );
+  margin: 1.5rem auto;
+  opacity: 0.4;
+}
+
+/* Controls list */
+.controls-list {
+  list-style: none;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0;
+}
+
+.controls-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.controls-list li span {
+  margin-left: auto;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* Keyboard key pill */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--color-gold);
+  background: var(--color-kbd-bg);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Enter button */
+#enter-btn {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.7rem 2.2rem;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  background: transparent;
+  border: 1px solid var(--color-gold-dim);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background var(--transition-smooth),
+    color var(--transition-smooth),
+    box-shadow var(--transition-smooth),
+    transform 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#enter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 230, 163, 0.06),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+#enter-btn:hover {
+  background: rgba(245, 230, 163, 0.06);
+  box-shadow:
+    0 0 20px rgba(245, 230, 163, 0.08),
+    inset 0 0 20px rgba(245, 230, 163, 0.03);
+  transform: translateY(-1px);
+}
+
+#enter-btn:hover::before {
+  left: 100%;
+}
+
+#enter-btn:active {
+  transform: translateY(0);
+}
+
+/* ── HUD ────────────────────────────────────────────────────── */
+#hud {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+#hud:hover {
+  opacity: 0.9;
+}
+
+#fps-counter,
+#pt-status {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  background: rgba(10, 10, 8, 0.5);
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid rgba(245, 230, 163, 0.04);
+}
+
+#pt-status {
+  color: var(--color-gold-dim);
+}
+
+/* ── Vignette Overlay ───────────────────────────────────────── */
+#vignette {
+  position: fixed;
+  top: -2%;
+  left: -2%;
+  width: 104%;
+  height: 104%;
+  z-index: 90;
+  pointer-events: none;
+
+  /* Radial vignette: transparent center, dark edges */
+  background: radial-gradient(
+    ellipse 70% 70% at 50% 50%,
+    transparent 0%,
+    transparent 40%,
+    rgba(5, 5, 3, 0.3) 70%,
+    rgba(5, 5, 3, 0.7) 90%,
+    rgba(5, 5, 3, 0.92) 100%
+  );
+
+  /* CRT-like subtle curve via border-radius on oversized element */
+  border-radius: 8% / 6%;
+}
+
+/* ── Scanline Overlay ───────────────────────────────────────── */
+#scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 95;
+  pointer-events: none;
+  opacity: 0.03;
+
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.4) 2px,
+    rgba(0, 0, 0, 0.4) 4px
+  );
+}
+
+/* ── Ambient Flicker Animation (applied to vignette) ──────── */
+@keyframes ambientFlicker {
+  0%, 100% { opacity: 1; }
+  92%      { opacity: 1; }
+  93%      { opacity: 0.96; }
+  94%      { opacity: 1; }
+  96%      { opacity: 0.98; }
+  97%      { opacity: 1; }
+}
+
+#vignette {
+  animation: ambientFlicker 8s infinite;
+}
+
+/* ── Responsive Adjustments ─────────────────────────────────── */
+@media (max-width: 480px) {
+  .instructions-inner {
+    padding: 2rem 1.8rem;
+  }
+
+  .title {
+    font-size: 1.3rem;
+    letter-spacing: 0.2em;
+  }
+
+  .subtitle {
+    font-size: 0.6rem;
+  }
+
+  .controls-list li {
+    font-size: 0.7rem;
+  }
+
+  kbd {
+    min-width: 24px;
+    height: 20px;
+    font-size: 0.55rem;
+    padding: 0 6px;
+  }
+
+  #hud {
+    top: 12px;
+    right: 12px;
+  }
+}

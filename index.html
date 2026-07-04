@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Backrooms: Path Tracing Experience — A first-person 3D horror exploration game set in the endless liminal corridors of the Backrooms. Built with Three.js path tracing.">
+  <meta name="keywords" content="backrooms, path tracing, three.js, 3D game, horror, liminal space, first person, web game">
+  <meta name="author" content="Backrooms Studio">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Backrooms: Path Tracing Experience">
+  <meta property="og:description" content="Explore the endless liminal corridors of the Backrooms in this path-traced first-person experience.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#1a1408">
+  <title>Backrooms: Path Tracing Experience</title>
+
+  <!-- Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Main Game Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- UI Overlay -->
+
+  <!-- Crosshair -->
+  <div id="crosshair"></div>
+
+  <!-- Instructions Panel (shown on start) -->
+  <div id="instructions">
+    <div class="instructions-inner">
+      <h1 class="title">THE BACKROOMS</h1>
+      <p class="subtitle">Path Tracing Experience</p>
+
+      <div class="divider"></div>
+
+      <ul class="controls-list">
+        <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span>Move</span></li>
+        <li><kbd>Mouse</kbd> <span>Look around</span></li>
+        <li><kbd>Click</kbd> <span>Throw ball</span></li>
+        <li><kbd>Space</kbd> <span>Jump</span></li>
+        <li><kbd>E</kbd> <span>Pick up ball</span></li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <button id="enter-btn">CLICK TO ENTER</button>
+    </div>
+  </div>
+
+  <!-- HUD (top-right corner) -->
+  <div id="hud">
+    <div id="fps-counter">FPS: --</div>
+    <div id="pt-status">Path Tracing: Active</div>
+  </div>
+
+  <!-- Vignette Overlay -->
+  <div id="vignette"></div>
+
+  <!-- Scanline Overlay -->
+  <div id="scanlines"></div>
+
+  <!-- Game Script -->
+  <script type="module" src="game.js"></script>
+
+</body>
+</html>
