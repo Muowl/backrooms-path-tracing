@@ -82,4 +82,5 @@ export const wallColliders = [];
 export const refs = {
   dustParticles: null,
   waterMaterial: null,
+  waterMesh: null,
 };

@@ -18,7 +18,10 @@
   {
     "imports": {
       "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/"
+      "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/",
+      "three/examples/jsm/": "https://unpkg.com/three@0.164.0/examples/jsm/",
+      "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.7.6/build/index.module.js",
+      "three-gpu-pathtracer": "https://unpkg.com/three-gpu-pathtracer@0.0.23/build/index.module.js"
     }
   }
   </script>
@@ -48,8 +51,9 @@
         <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span>Move</span></li>
         <li><kbd>Mouse</kbd> <span>Look around</span></li>
         <li><kbd>Click</kbd> <span>Throw ball</span></li>
-        <li><kbd>Space</kbd> <span>Jump</span></li>
+        <li><kbd>Space</kbd> <span>Jump / climb out of pool</span></li>
         <li><kbd>E</kbd> <span>Pick up ball</span></li>
+        <li><kbd>P</kbd> <span>Toggle real path tracing</span></li>
       </ul>
 
       <div class="divider"></div>
@@ -61,7 +65,7 @@
   <!-- HUD (top-right corner) -->
   <div id="hud">
     <div id="fps-counter">FPS: --</div>
-    <div id="pt-status">Path Tracing: Active</div>
+    <div id="pt-status">Raster — press P for path tracing</div>
   </div>
 
   <!-- Vignette Overlay -->

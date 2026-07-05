@@ -21,11 +21,15 @@ function isInPool(x, z) {
  * Creates the throwable red rubber ball with physics.
  */
 export function buildBall(scene) {
-  const ballGeo = new THREE.SphereGeometry(ball.radius, 24, 24);
-  const ballMat = new THREE.MeshStandardMaterial({
-    color: 0xcc3333,
-    roughness: 0.7,
-    metalness: 0.05,
+  const ballGeo = new THREE.SphereGeometry(ball.radius, 32, 32);
+  // Physical material with a light clearcoat reads as rubber with a
+  // worn glossy skin under the fluorescent lights
+  const ballMat = new THREE.MeshPhysicalMaterial({
+    color: 0xb02a2a,
+    roughness: 0.55,
+    metalness: 0.0,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.4,
   });
 
   ball.mesh = new THREE.Mesh(ballGeo, ballMat);
@@ -118,18 +122,26 @@ export function updateBall(delta, clock, camera) {
   if (ballInPool) {
     ballGround = poolBounds.floorY + ball.radius;
 
-    // Float on water surface
-    const waterSurface = poolBounds.waterY + ball.radius;
-    if (ball.mesh.position.y <= waterSurface && ball.velocity.y < 0) {
-      // Bob on water
-      ball.mesh.position.y = waterSurface;
-      ball.velocity.y *= -0.2; // Very dampened bounce on water
-      ball.velocity.x *= 0.95; // Water drag
-      ball.velocity.z *= 0.95;
+    // While below floor level, keep the ball inside the pool walls
+    if (ball.mesh.position.y < roomBounds.floorY - ball.radius) {
+      const p = ball.mesh.position;
+      if (p.x < poolBounds.minX + ball.radius) { p.x = poolBounds.minX + ball.radius; ball.velocity.x *= -ball.restitution; }
+      if (p.x > poolBounds.maxX - ball.radius) { p.x = poolBounds.maxX - ball.radius; ball.velocity.x *= -ball.restitution; }
+      if (p.z < poolBounds.minZ + ball.radius) { p.z = poolBounds.minZ + ball.radius; ball.velocity.z *= -ball.restitution; }
+      if (p.z > poolBounds.maxZ - ball.radius) { p.z = poolBounds.maxZ - ball.radius; ball.velocity.z *= -ball.restitution; }
+    }
 
-      // Gentle bobbing
-      ball.mesh.position.y +=
-        Math.sin(clock.getElapsedTime() * 3.0) * 0.02;
+    // Buoyancy: a spring pushes the ball up toward its float height while
+    // gravity pulls down. With stiffness 150, the rest point (spring force
+    // = gravity) sits ~0.065m below floatY — half-submerged at the water
+    // line. Splashing in overshoots and bobs back up naturally.
+    const floatY = poolBounds.waterY + ball.radius * 0.4;
+    if (ball.mesh.position.y < floatY) {
+      ball.velocity.y += (floatY - ball.mesh.position.y) * 150.0 * delta;
+      ball.velocity.y *= Math.max(0, 1 - 3.0 * delta);  // vertical drag
+      ball.velocity.x *= Math.max(0, 1 - 1.5 * delta);  // water resistance
+      ball.velocity.z *= Math.max(0, 1 - 1.5 * delta);
+      ball.onGround = false;
     }
   }
 

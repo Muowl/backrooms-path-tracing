@@ -17,6 +17,14 @@ import { buildDustParticles, updateParticles } from './src/particles.js';
 import { createPostProcessing } from './src/postprocessing.js';
 import { updatePlayer } from './src/player.js';
 import { setupInput } from './src/input.js';
+import {
+  togglePathTracing,
+  renderPathTracing,
+  isPathTracingEnabled,
+  isPathTracingBuilding,
+  getPathTracingSamples,
+  notifyPathTracingResize,
+} from './src/pathtracing.js';
 
 // ============================================================================
 // DOM References
@@ -26,6 +34,7 @@ const canvas = document.getElementById('game-canvas');
 const instructionsPanel = document.getElementById('instructions');
 const hud = document.getElementById('hud');
 const fpsDisplay = document.getElementById('fps-counter');
+const ptStatusDisplay = document.getElementById('pt-status');
 
 // ============================================================================
 // Renderer Setup
@@ -40,7 +49,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.8;
+renderer.toneMappingExposure = 1.1;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 // ============================================================================
@@ -60,11 +69,14 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(0, player.height, 0);
 
 // ============================================================================
-// Ambient Light
+// Ambient Fill Light
 // ============================================================================
 
-const ambientLight = new THREE.AmbientLight(0xfff0d0, 0.15);
-scene.add(ambientLight);
+// Hemisphere fill: warm bounce from the lit ceiling above, darker
+// carpet-colored bounce from below. Reads more naturally than a flat
+// AmbientLight because surfaces facing up/down get different fill.
+const hemiLight = new THREE.HemisphereLight(0xfff0d0, 0x5a4a28, 0.45);
+scene.add(hemiLight);
 
 // ============================================================================
 // Controls (Pointer Lock)
@@ -101,6 +113,13 @@ const { composer, backroomsPass, bloomPass } = createPostProcessing(renderer, sc
 // ============================================================================
 
 setupInput(controls, camera);
+
+// P toggles between the raster pipeline and real progressive path tracing
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyP') {
+    togglePathTracing(renderer, scene, camera);
+  }
+});
 
 // ============================================================================
 // Clock
@@ -143,6 +162,7 @@ function onWindowResize() {
 
   bloomPass.resolution.set(width, height);
   backroomsPass.uniforms.resolution.value.set(width, height);
+  notifyPathTracingResize();
 }
 
 window.addEventListener('resize', onWindowResize);
@@ -185,15 +205,40 @@ function animate() {
   const clampedDelta = Math.min(delta, 0.1);
 
   updatePlayer(clampedDelta, controls, camera, clock);
-  updateBall(clampedDelta, clock, camera);
-  updateWater(clock, camera);
-  updateLightFlicker(clampedDelta);
-  updateParticles(clampedDelta, clock);
   updateFPS(delta);
 
-  backroomsPass.uniforms.time.value = clock.getElapsedTime();
+  if (isPathTracingEnabled()) {
+    // Path tracing mode: dynamic objects are frozen (the BVH was built
+    // once at toggle time); each frame accumulates one more sample.
+    renderPathTracing(camera);
+  } else {
+    updateBall(clampedDelta, clock, camera);
+    updateWater(clock, camera);
+    updateLightFlicker(clampedDelta);
+    updateParticles(clampedDelta, clock);
 
-  composer.render();
+    backroomsPass.uniforms.time.value = clock.getElapsedTime();
+    composer.render();
+  }
+
+  updatePTStatus();
+}
+
+function updatePTStatus() {
+  if (!ptStatusDisplay) return;
+
+  let text;
+  if (isPathTracingBuilding()) {
+    text = 'Path Tracing: building BVH…';
+  } else if (isPathTracingEnabled()) {
+    text = `Path Tracing: ${getPathTracingSamples()} samples`;
+  } else {
+    text = 'Raster — press P for path tracing';
+  }
+
+  if (ptStatusDisplay.textContent !== text) {
+    ptStatusDisplay.textContent = text;
+  }
 }
 
 // ============================================================================
@@ -201,3 +246,21 @@ function animate() {
 // ============================================================================
 
 init();
+
+// Debug hook for automated screenshots / camera inspection (?debug)
+if (new URLSearchParams(location.search).has('debug')) {
+  window.__debug = {
+    camera,
+    scene,
+    renderer,
+    controls,
+    composer,
+    ball,
+    pt: {
+      toggle: () => togglePathTracing(renderer, scene, camera),
+      isEnabled: isPathTracingEnabled,
+      isBuilding: isPathTracingBuilding,
+      samples: getPathTracingSamples,
+    },
+  };
+}

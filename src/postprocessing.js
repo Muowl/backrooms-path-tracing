@@ -8,7 +8,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { GammaCorrectionShader } from 'three/addons/shaders/GammaCorrectionShader.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // ============================================================================
 // Post-Processing Pipeline
@@ -62,18 +62,18 @@ export const BackroomsPostShader = {
       vec3 color = vec3(r, g, b);
 
       // --- Warm color grading ---
-      color *= vec3(1.05, 1.0, 0.92);
+      color *= vec3(1.04, 1.0, 0.94);
 
-      // Slight desaturation for that washed-out look
+      // Very slight desaturation for that aged look
       float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-      color = mix(vec3(luminance), color, 0.9);
+      color = mix(vec3(luminance), color, 0.96);
 
-      // --- Film grain (path-tracer noise feel) ---
-      float noise = grain(uv, time) * 0.06;
+      // --- Film grain (path-tracer noise feel, centered around zero) ---
+      float noise = (grain(uv, time) - 0.5) * 0.05;
       color += noise;
 
-      // --- Vignette ---
-      float vig = 1.0 - dist * 0.8;
+      // --- Vignette (kept subtle — the DOM overlay adds its own) ---
+      float vig = 1.0 - dist * 0.45;
       vig = smoothstep(0.0, 1.0, vig);
       color *= vig;
 
@@ -101,20 +101,24 @@ export function createPostProcessing(renderer, scene, camera) {
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
-  // Bloom pass — creates light halos around fluorescent fixtures
+  // Bloom pass — runs in linear HDR space (before tone mapping), so the
+  // threshold of 1.0 only picks up emissive fixtures and hot highlights
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.4,  // strength
-    0.6,  // radius
-    0.85  // threshold
+    0.35, // strength
+    0.5,  // radius
+    1.0   // threshold
   );
   composer.addPass(bloomPass);
 
-  // Gamma correction (before our custom shader)
-  const gammaPass = new ShaderPass(GammaCorrectionShader);
-  composer.addPass(gammaPass);
+  // Output pass — applies the renderer's tone mapping (ACES) and converts
+  // linear -> sRGB. Replaces the old GammaCorrectionShader, which was
+  // double-correcting on top of renderer.outputColorSpace.
+  const outputPass = new OutputPass();
+  composer.addPass(outputPass);
 
   // Custom Backrooms atmosphere shader (grain, vignette, CA, color grading)
+  // runs last, on the final display-ready image, like a film effect.
   const backroomsPass = new ShaderPass(BackroomsPostShader);
   composer.addPass(backroomsPass);
 

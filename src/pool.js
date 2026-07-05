@@ -143,11 +143,14 @@ function buildWater(scene, width, depth, cx, cz) {
   waterMaterial = new THREE.ShaderMaterial({
     uniforms: {
       time: { value: 0.0 },
-      opacity: { value: 0.6 },
-      waterColor: { value: new THREE.Color(0x5a6a30) }, // murky yellow-green
+      opacity: { value: 0.8 },
+      waterColor: { value: new THREE.Color(0x2e4a34) }, // murky green
       fogColor: { value: new THREE.Color(0x2a2210) },
       fogDensity: { value: 0.015 },
       cameraPos: { value: new THREE.Vector3() },
+      // World positions of the two nearest ceiling fixtures, for specular glints
+      lightPos1: { value: new THREE.Vector3(14, 3.9, -5) },
+      lightPos2: { value: new THREE.Vector3(4, 3.9, -12) },
     },
     vertexShader: /* glsl */ `
       uniform float time;
@@ -188,37 +191,64 @@ function buildWater(scene, width, depth, cx, cz) {
       uniform vec3 fogColor;
       uniform float fogDensity;
       uniform vec3 cameraPos;
+      uniform vec3 lightPos1;
+      uniform vec3 lightPos2;
 
       varying vec2 vUv;
       varying vec3 vWorldPos;
       varying vec3 vNormal;
 
+      // Specular glint from a point light (Blinn-Phong on the wavy normal)
+      float glint(vec3 lightPos, vec3 viewDir, vec3 normal) {
+        vec3 lightDir = normalize(lightPos - vWorldPos);
+        vec3 halfDir = normalize(lightDir + viewDir);
+        return pow(max(dot(normal, halfDir), 0.0), 140.0);
+      }
+
       void main() {
         // View direction
         vec3 viewDir = normalize(cameraPos - vWorldPos);
 
-        // Fresnel effect: more reflective at glancing angles
-        float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 3.0);
+        // Perturb the vertex normal with high-frequency ripples so the
+        // surface sparkles instead of reading as a smooth sheet
+        vec3 normal = vNormal;
+        normal.x += sin(vUv.x * 90.0 + time * 3.0) * 0.04
+                  + sin(vUv.x * 47.0 - time * 2.2) * 0.03;
+        normal.y += sin(vUv.y * 80.0 - time * 2.5) * 0.04
+                  + sin((vUv.x + vUv.y) * 60.0 + time * 1.7) * 0.03;
+        normal = normalize(normal);
+        // vNormal is in the plane's local space where +Z is up; swizzle to world
+        vec3 worldNormal = normalize(vec3(normal.x, normal.z, -normal.y));
 
-        // Fake reflection color (ceiling light reflection)
-        vec3 reflectionColor = vec3(0.9, 0.85, 0.6);
+        // Schlick fresnel (F0 = 0.02 for water)
+        float cosTheta = max(dot(viewDir, worldNormal), 0.0);
+        float fresnel = 0.02 + 0.98 * pow(1.0 - cosTheta, 5.0);
+
+        // Fake ceiling reflection — matches the actual dark ceiling of the
+        // room, so at grazing angles the water mirrors darkness rather
+        // than turning milky. The fixture glints below add the highlights.
+        vec3 reflectionColor = vec3(0.16, 0.13, 0.08);
 
         // Caustic-like shimmer pattern
         float shimmer = sin(vUv.x * 30.0 + time * 2.0) *
                         sin(vUv.y * 25.0 - time * 1.5) * 0.1 + 0.9;
 
-        // Blend water color with reflection based on fresnel
-        vec3 color = mix(waterColor * shimmer, reflectionColor, fresnel * 0.4);
+        // Blend murky water body with reflection at glancing angles
+        vec3 color = mix(waterColor * shimmer, reflectionColor, fresnel);
 
-        // Slight color variation with depth
-        color += vec3(0.02, 0.03, 0.0) * sin(time * 0.5);
+        // Specular glints from the two nearest ceiling fixtures
+        float spec = glint(lightPos1, viewDir, worldNormal) * 0.7
+                   + glint(lightPos2, viewDir, worldNormal) * 0.4;
+        color += vec3(1.0, 0.95, 0.8) * spec;
 
         // Fog
         float dist = length(cameraPos - vWorldPos);
         float fogFactor = 1.0 - exp(-fogDensity * fogDensity * dist * dist);
         color = mix(color, fogColor, fogFactor);
 
-        gl_FragColor = vec4(color, opacity + fresnel * 0.2);
+        // More opaque at glancing angles, spec highlights always visible
+        float alpha = clamp(opacity + fresnel * 0.4 + spec * 0.5, 0.0, 1.0);
+        gl_FragColor = vec4(color, alpha);
       }
     `,
     transparent: true,
@@ -230,6 +260,9 @@ function buildWater(scene, width, depth, cx, cz) {
   waterMesh.rotation.x = -Math.PI / 2;
   waterMesh.position.set(cx, poolBounds.waterY, cz);
   scene.add(waterMesh);
+
+  // Referenced by the path tracing mode to swap in a physical material
+  refs.waterMesh = waterMesh;
 }
 
 /**
