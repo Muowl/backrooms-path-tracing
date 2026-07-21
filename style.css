@@ -384,4 +384,113 @@ kbd {
     top: 12px;
     right: 12px;
   }
+
+  #objective-hud {
+    top: 12px;
+    left: 12px;
+  }
+}
+
+/* ── Objective HUD (VHS counter + sanity meter) ─────────────── */
+#objective-hud {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+#vhs-counter {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--color-gold);
+  background: rgba(10, 10, 8, 0.5);
+  padding: 4px 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(245, 230, 163, 0.08);
+}
+
+#sanity-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#sanity-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  color: var(--color-text-muted);
+}
+
+#sanity-track {
+  width: 160px;
+  height: 8px;
+  background: rgba(10, 10, 8, 0.6);
+  border: 1px solid rgba(245, 230, 163, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#sanity-fill {
+  height: 100%;
+  width: 100%;
+  background: hsl(90, 70%, 45%);
+  border-radius: 4px;
+  transition: width 0.2s linear, background 0.4s linear;
+}
+
+/* ── Centered toast messages ────────────────────────────────── */
+#toast {
+  position: fixed;
+  top: 32%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 200;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  color: var(--color-gold);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  max-width: 80vw;
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#toast.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ── Blackout flash overlay ─────────────────────────────────── */
+#blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  pointer-events: none;
+  background: #0a0a08;
+  opacity: 0;
+}
+
+/* ── Objective note on the start panel ──────────────────────── */
+.objective-note {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0 0 18px;
+  max-width: 34ch;
+}
+
+.objective-note strong {
+  color: var(--color-gold-dim);
 }

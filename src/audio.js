@@ -122,6 +122,55 @@ export function footstep(inWater = false) {
 }
 
 /**
+ * A soft double-thump heartbeat, used when sanity runs low. `intensity`
+ * (0..1) scales volume so the pulse grows as fear does.
+ */
+export function heartbeat(intensity = 1) {
+  if (!ctx || muted) return;
+  const now = ctx.currentTime;
+  const vol = 0.12 + intensity * 0.25;
+
+  const thump = (t, gain) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(70, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    osc.connect(g).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  };
+
+  thump(now, vol); // lub
+  thump(now + 0.18, vol * 0.7); // dub
+}
+
+/**
+ * A bright confirmation blip for picking up a VHS tape: two quick rising
+ * tones, distinct from the murky ambience so a pickup reads clearly.
+ */
+export function collectSound() {
+  if (!ctx || muted) return;
+  const now = ctx.currentTime;
+  [660, 990].forEach((freq, i) => {
+    const t = now + i * 0.09;
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.18, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    osc.connect(g).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  });
+}
+
+/**
  * Toggle mute on the master bus with a short fade to avoid a click.
  * Returns the new muted state.
  */

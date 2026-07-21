@@ -12,6 +12,7 @@ A first-person 3D Backrooms-inspired game and rendering experiment built for the
 - **🎮 First-Person Controller**: Smooth movement, acceleration/deceleration, sprinting, jumping, wall/pool collision resolution, and swimming (jump at the surface to climb out of the pool).
 - **📦 Procedural Asset Generation**: 100% of textures (carpet, wallpaper, tiles, ceiling, dust, and bump maps) are generated programmatically on HTML5 canvases and tagged `SRGBColorSpace`, removing external assets and enabling offline/instant load.
 - **🔊 Procedural Audio**: The canonical fluorescent 60Hz mains hum (plus its 120Hz harmonic and a band-passed electrical buzz) and speed-synced footsteps are synthesized live with the Web Audio API — no sound files. Steps soften into a wet slosh in the pool; press `M` to mute.
+- **📼 Objective — Stay in the Light**: Hunt down **6 hovering VHS tapes** scattered through the level while a sanity meter drains whenever you stray from the fluorescent fixtures. Fear distorts the screen (heavier grain, chromatic aberration, a heartbeat vignette) as sanity falls; hit zero and you black out and wake back under a light. Collect every tape to escape.
 
 ## Raster vs. real path tracing — press P
 
@@ -71,6 +72,8 @@ game-backroom-path/
     ├── player.js       # Movement, gravity, swimming, and collision resolution
     ├── input.js        # Keyboard & mouse event listener setups
     ├── audio.js        # Procedural Web Audio ambience & footsteps
+    ├── sanity.js       # "Stay in the light" sanity meter & blackout
+    ├── collectibles.js # Hovering VHS tapes to hunt down
     ├── pathtracing.js  # Real progressive path tracing mode (three-gpu-pathtracer)
     └── postprocessing.js # EffectComposer pipeline and BackroomsPostShader
 ```

@@ -54,6 +54,26 @@ export const fpsTracker = {
 // Light flicker state
 export const flickerLights = [];
 
+// Lit ceiling fixtures registered for the sanity "stay in the light"
+// mechanic. Each entry: { x, z, radius, strength, light, baseIntensity }.
+// `light`/`baseIntensity` let flickering fixtures dim their safe-zone in
+// real time, so standing under a stuttering light is genuinely risky.
+export const litFixtures = [];
+
+// Sanity: drains in the dark, regenerates in the light. 0 triggers a blackout.
+export const sanity = {
+  value: 100,
+  max: 100,
+};
+
+// VHS tape collectibles scattered around the level.
+export const collectibles = {
+  collected: 0,
+  total: 0,
+  won: false,
+  items: [], // { mesh, glow, collected, baseY, phase }
+};
+
 // Room bounds (AABB walls for collision)
 export const roomBounds = {
   minX: -20,

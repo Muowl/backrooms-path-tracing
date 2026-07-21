@@ -59,6 +59,8 @@
 
       <div class="divider"></div>
 
+      <p class="objective-note">Find all <strong>6 VHS tapes</strong> in the dark — but stay near the lights, or your sanity slips away.</p>
+
       <button id="enter-btn">CLICK TO ENTER</button>
     </div>
   </div>
@@ -69,6 +71,21 @@
     <div id="pt-status">Raster — press P for path tracing</div>
     <div id="audio-status">Sound: on (M)</div>
   </div>
+
+  <!-- Objective HUD (top-left corner) -->
+  <div id="objective-hud">
+    <div id="vhs-counter">VHS 0 / 0</div>
+    <div id="sanity-meter">
+      <span id="sanity-label">SANITY</span>
+      <div id="sanity-track"><div id="sanity-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Centered transient messages (pickups, blackout, win) -->
+  <div id="toast"></div>
+
+  <!-- Blackout flash overlay -->
+  <div id="blackout"></div>
 
   <!-- Vignette Overlay -->
   <div id="vignette"></div>

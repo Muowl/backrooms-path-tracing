@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
 // Game modules
-import { player, keys, ball, fpsTracker } from './src/config.js';
+import { player, keys, ball, fpsTracker, sanity, collectibles } from './src/config.js';
 import { buildRoom } from './src/room.js';
 import { buildLights, updateLightFlicker } from './src/lights.js';
 import { buildPool, updateWater } from './src/pool.js';
@@ -18,6 +18,8 @@ import { createPostProcessing } from './src/postprocessing.js';
 import { updatePlayer } from './src/player.js';
 import { setupInput } from './src/input.js';
 import { initAudio, toggleMute, isMuted } from './src/audio.js';
+import { updateSanity, getSanity01, getBlackoutFlash } from './src/sanity.js';
+import { buildCollectibles, updateCollectibles } from './src/collectibles.js';
 import {
   togglePathTracing,
   renderPathTracing,
@@ -37,6 +39,10 @@ const hud = document.getElementById('hud');
 const fpsDisplay = document.getElementById('fps-counter');
 const ptStatusDisplay = document.getElementById('pt-status');
 const audioStatusDisplay = document.getElementById('audio-status');
+const vhsCounter = document.getElementById('vhs-counter');
+const sanityFill = document.getElementById('sanity-fill');
+const toastEl = document.getElementById('toast');
+const blackoutEl = document.getElementById('blackout');
 
 // ============================================================================
 // Renderer Setup
@@ -68,7 +74,9 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(0, player.height, 0);
+// Spawn under the bright fixture near the room centre so the player starts
+// safely inside the light rather than immediately draining sanity.
+camera.position.set(-6, player.height, 0);
 
 // ============================================================================
 // Ambient Fill Light
@@ -188,6 +196,9 @@ function init() {
   buildBall(scene);
   buildProps(scene);
   buildDustParticles(scene);
+  buildCollectibles(scene);
+
+  updateVhsCounter();
 
   animate();
 
@@ -224,14 +235,76 @@ function animate() {
   } else {
     updateBall(clampedDelta, clock, camera);
     updateWater(clock, camera);
+    // Flicker must run before sanity so a stuttering light's shrunken
+    // safe-zone is reflected in this frame's drain.
     updateLightFlicker(clampedDelta);
     updateParticles(clampedDelta, clock);
 
+    const playerObj = controls.getObject();
+    if (controls.isLocked && !collectibles.won) {
+      updateSanity(clampedDelta, playerObj, onBlackout);
+      updateCollectibles(clampedDelta, clock, playerObj, onCollectTape, onWin);
+    }
+    updateObjectiveHUD();
+
     backroomsPass.uniforms.time.value = clock.getElapsedTime();
+    backroomsPass.uniforms.sanity.value = getSanity01();
     composer.render();
   }
 
   updatePTStatus();
+}
+
+// ============================================================================
+// Objective HUD & event callbacks
+// ============================================================================
+
+let toastTimer = null;
+
+function showToast(message, duration = 2200) {
+  if (!toastEl) return;
+  toastEl.textContent = message;
+  toastEl.classList.add('visible');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('visible'), duration);
+}
+
+function updateVhsCounter() {
+  if (vhsCounter) {
+    vhsCounter.textContent = `VHS ${collectibles.collected} / ${collectibles.total}`;
+  }
+}
+
+function updateObjectiveHUD() {
+  if (sanityFill) {
+    const pct = Math.round(getSanity01() * 100);
+    sanityFill.style.width = `${pct}%`;
+    // Green-ish when safe, shifting to alarm red as sanity drains.
+    const hue = Math.round(getSanity01() * 90); // 0 (red) → 90 (yellow-green)
+    sanityFill.style.background = `hsl(${hue}, 70%, 45%)`;
+  }
+  // Blackout white-out flash driven by the sanity module.
+  if (blackoutEl) {
+    blackoutEl.style.opacity = getBlackoutFlash().toFixed(3);
+  }
+}
+
+function onCollectTape() {
+  updateVhsCounter();
+  const remaining = collectibles.total - collectibles.collected;
+  showToast(
+    remaining > 0
+      ? `VHS recovered — ${remaining} left`
+      : 'Final tape recovered'
+  );
+}
+
+function onWin() {
+  showToast('ALL TAPES RECOVERED — you found a way out.', 8000);
+}
+
+function onBlackout() {
+  showToast('You blacked out in the dark…', 2600);
 }
 
 function updatePTStatus() {
