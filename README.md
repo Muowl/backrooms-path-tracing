@@ -11,6 +11,7 @@ A first-person 3D Backrooms-inspired game and rendering experiment built for the
 - **🎬 Linear HDR Pipeline**: RenderPass → UnrealBloom (in linear HDR, threshold 1.0 so only emissives bloom) → OutputPass (ACES tone mapping + sRGB) → custom grade pass (chromatic aberration, film grain, vignette, warm grading).
 - **🎮 First-Person Controller**: Smooth movement, acceleration/deceleration, sprinting, jumping, wall/pool collision resolution, and swimming (jump at the surface to climb out of the pool).
 - **📦 Procedural Asset Generation**: 100% of textures (carpet, wallpaper, tiles, ceiling, dust, and bump maps) are generated programmatically on HTML5 canvases and tagged `SRGBColorSpace`, removing external assets and enabling offline/instant load.
+- **🔊 Procedural Audio**: The canonical fluorescent 60Hz mains hum (plus its 120Hz harmonic and a band-passed electrical buzz) and speed-synced footsteps are synthesized live with the Web Audio API — no sound files. Steps soften into a wet slosh in the pool; press `M` to mute.
 
 ## Raster vs. real path tracing — press P
 
@@ -44,6 +45,7 @@ Implementation notes (`src/pathtracing.js`):
 - **E** — Pick up the red ball (when close)
 - **Left Click** — Throw the ball (when holding)
 - **P** — Toggle real path tracing on/off
+- **M** — Mute / unmute sound
 - **Esc** — Release mouse lock to reveal menu
 
 > Tip: appending `?debug` to the URL exposes `window.__debug` (camera, scene, renderer, composer) in the console for experimentation.
@@ -68,6 +70,7 @@ game-backroom-path/
     ├── particles.js    # Floating dust motes particle system
     ├── player.js       # Movement, gravity, swimming, and collision resolution
     ├── input.js        # Keyboard & mouse event listener setups
+    ├── audio.js        # Procedural Web Audio ambience & footsteps
     ├── pathtracing.js  # Real progressive path tracing mode (three-gpu-pathtracer)
     └── postprocessing.js # EffectComposer pipeline and BackroomsPostShader
 ```

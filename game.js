@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
 // Game modules
-import { player, keys, ball, fpsTracker, roomBounds } from './src/config.js';
+import { player, keys, ball, fpsTracker } from './src/config.js';
 import { buildRoom } from './src/room.js';
 import { buildLights, updateLightFlicker } from './src/lights.js';
 import { buildPool, updateWater } from './src/pool.js';
@@ -17,6 +17,7 @@ import { buildDustParticles, updateParticles } from './src/particles.js';
 import { createPostProcessing } from './src/postprocessing.js';
 import { updatePlayer } from './src/player.js';
 import { setupInput } from './src/input.js';
+import { initAudio, toggleMute, isMuted } from './src/audio.js';
 import {
   togglePathTracing,
   renderPathTracing,
@@ -35,6 +36,7 @@ const instructionsPanel = document.getElementById('instructions');
 const hud = document.getElementById('hud');
 const fpsDisplay = document.getElementById('fps-counter');
 const ptStatusDisplay = document.getElementById('pt-status');
+const audioStatusDisplay = document.getElementById('audio-status');
 
 // ============================================================================
 // Renderer Setup
@@ -93,6 +95,10 @@ if (instructionsPanel) {
 controls.addEventListener('lock', () => {
   if (instructionsPanel) instructionsPanel.style.display = 'none';
   if (hud) hud.style.display = 'block';
+  // AudioContext can only start from a user gesture; entering pointer-lock
+  // is one, so kick off (or resume) the procedural ambience here.
+  initAudio();
+  updateAudioStatus();
 });
 
 controls.addEventListener('unlock', () => {
@@ -112,14 +118,18 @@ const { composer, backroomsPass, bloomPass } = createPostProcessing(renderer, sc
 // Input
 // ============================================================================
 
-setupInput(controls, camera);
-
-// P toggles between the raster pipeline and real progressive path tracing
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyP') {
-    togglePathTracing(renderer, scene, camera);
-  }
+setupInput(controls, camera, {
+  onTogglePathTracing: () => togglePathTracing(renderer, scene, camera),
+  onToggleMute: () => {
+    toggleMute();
+    updateAudioStatus();
+  },
 });
+
+function updateAudioStatus() {
+  if (!audioStatusDisplay) return;
+  audioStatusDisplay.textContent = isMuted() ? 'Sound: muted (M)' : 'Sound: on (M)';
+}
 
 // ============================================================================
 // Clock

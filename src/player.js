@@ -1,5 +1,23 @@
 import * as THREE from 'three';
 import { player, keys, roomBounds, poolBounds, wallColliders } from './config.js';
+import { footstep } from './audio.js';
+
+// ----------------------------------------------------------------------------
+// View feedback state (head-bob, sprint FOV) and footstep cadence.
+// These are visual/audio only — they must never leak into the collision
+// position, so the bob is added after physics and removed before the next
+// frame's physics runs.
+// ----------------------------------------------------------------------------
+let bobPhase = 0; // advances with distance walked
+let bobAmp = 0; // eased 0→amplitude so it fades in/out smoothly
+let bobOffset = 0; // vertical camera offset currently baked into position
+let strideDist = 0; // distance accumulated toward the next footstep
+let wasMoving = false;
+let baseFov = null; // captured from the camera on first update
+
+const BOB_AMPLITUDE = 0.045; // metres of vertical head sway
+const STRIDE_LENGTH = 2.0; // metres walked per footstep
+const SPRINT_FOV_SCALE = 1.06; // gentle FOV punch while sprinting
 
 /**
  * Check if a position is inside the pool bounds.
@@ -66,7 +84,13 @@ export function resolveWallCollision(pos, radius) {
 export function updatePlayer(delta, controls, camera, clock) {
   if (!controls.isLocked) return;
 
+  if (baseFov === null) baseFov = camera.fov;
+
   const obj = controls.getObject();
+  // Remove last frame's head-bob before running physics so collision and
+  // ground checks operate on the true eye height, not the swaying camera.
+  obj.position.y -= bobOffset;
+
   const currentSpeed = keys.sprint ? player.sprintSpeed : player.speed;
 
   // Determine desired movement direction (acceleration-based)
@@ -196,5 +220,44 @@ export function updatePlayer(delta, controls, camera, clock) {
     // Nothing under the player (walked off the pool edge or mid-jump):
     // let gravity take over
     player.onGround = false;
+  }
+
+  // --------------------------------------------------------------------------
+  // View feedback: footsteps, head-bob, sprint FOV
+  // --------------------------------------------------------------------------
+  const hSpeedNow = Math.sqrt(player.velocity.x ** 2 + player.velocity.z ** 2);
+  const walking = player.onGround && hSpeedNow > 0.6;
+  const stride = keys.sprint ? STRIDE_LENGTH * 1.15 : STRIDE_LENGTH;
+
+  if (walking) {
+    // Seed the accumulator on the first stepping frame so a step fires almost
+    // immediately instead of after a full stride of silence.
+    if (!wasMoving) strideDist = stride;
+    strideDist += hSpeedNow * delta;
+    if (strideDist >= stride) {
+      strideDist -= stride;
+      footstep(player.inPool);
+    }
+    // One full bob cycle (two dips — left & right foot) per stride.
+    bobPhase += hSpeedNow * delta * ((Math.PI * 2) / stride);
+  } else {
+    strideDist = 0;
+  }
+  wasMoving = walking;
+
+  // Ease the bob amplitude in/out so starting and stopping feels smooth.
+  const targetAmp = walking ? BOB_AMPLITUDE : 0;
+  bobAmp += (targetAmp - bobAmp) * Math.min(1, delta * 8);
+  // Snap to exactly zero when idle so the camera is perfectly static — this
+  // keeps path-tracing accumulation from being nudged while standing still.
+  bobOffset = bobAmp < 0.0005 ? 0 : Math.sin(bobPhase * 2) * bobAmp;
+  obj.position.y += bobOffset;
+
+  // Sprint FOV punch: lerp toward a slightly wider view while sprint-walking.
+  const targetFov = keys.sprint && walking ? baseFov * SPRINT_FOV_SCALE : baseFov;
+  const newFov = camera.fov + (targetFov - camera.fov) * Math.min(1, delta * 6);
+  if (Math.abs(newFov - camera.fov) > 0.01) {
+    camera.fov = newFov;
+    camera.updateProjectionMatrix();
   }
 }

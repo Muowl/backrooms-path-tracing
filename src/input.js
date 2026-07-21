@@ -1,6 +1,5 @@
 import { keys, ball } from './config.js';
-import { tryPickupBall } from './ball.js';
-import { throwBall } from './ball.js';
+import { tryPickupBall, throwBall } from './ball.js';
 
 // ============================================================================
 // Input Handling
@@ -8,9 +7,16 @@ import { throwBall } from './ball.js';
 
 /**
  * Sets up all keyboard and mouse input event listeners.
+ *
+ * `handlers` collects one-shot actions that need dependencies owned by the
+ * main module (renderer, audio), keeping all key handling in one place
+ * instead of scattering extra `keydown` listeners across the codebase:
+ *   - onTogglePathTracing() — bound to P
+ *   - onToggleMute()        — bound to M
  */
-export function setupInput(controls, camera) {
+export function setupInput(controls, camera, handlers = {}) {
   document.addEventListener('keydown', (e) => {
+    // Ignore auto-repeat so held keys don't re-fire one-shot actions.
     switch (e.code) {
       case 'KeyW':
       case 'ArrowUp':
@@ -33,10 +39,16 @@ export function setupInput(controls, camera) {
         keys.sprint = true;
         break;
       case 'Space':
-        keys.jump = true;
+        if (!e.repeat) keys.jump = true;
         break;
       case 'KeyE':
-        tryPickupBall(controls);
+        if (!e.repeat) tryPickupBall(controls);
+        break;
+      case 'KeyP':
+        if (!e.repeat) handlers.onTogglePathTracing?.();
+        break;
+      case 'KeyM':
+        if (!e.repeat) handlers.onToggleMute?.();
         break;
     }
   });
@@ -70,7 +82,7 @@ export function setupInput(controls, camera) {
   });
 
   // Throw ball on click when holding it
-  document.addEventListener('mousedown', (e) => {
+  document.addEventListener('mousedown', () => {
     if (controls.isLocked && ball.held) {
       throwBall(camera);
     }
