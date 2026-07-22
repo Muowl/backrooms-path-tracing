@@ -59,15 +59,20 @@ export function buildCollectibles(scene) {
   TAPE_POSITIONS.forEach((pos, i) => {
     const group = new THREE.Group();
 
+    // The meshes live under their own child group so a pickup can hide them
+    // without hiding the glow light with them — see updateCollectibles.
+    const visuals = new THREE.Group();
+
     const shell = new THREE.Mesh(shellGeo, shellMat);
     shell.castShadow = true;
-    group.add(shell);
+    visuals.add(shell);
 
     const label = new THREE.Mesh(labelGeo, labelMat);
     label.rotation.x = -Math.PI / 2;
     label.position.y = 0.017;
-    group.add(label);
+    visuals.add(label);
 
+    group.add(visuals);
     group.position.set(pos.x, HOVER_Y, pos.z);
 
     // A soft point light sells the "glowing pickup" and casts a little pool
@@ -80,6 +85,7 @@ export function buildCollectibles(scene) {
 
     collectibles.items.push({
       mesh: group,
+      visuals,
       glow,
       collected: false,
       baseY: HOVER_Y,
@@ -113,7 +119,12 @@ export function updateCollectibles(delta, clock, playerObj, onCollect, onWin) {
     const dz = pz - item.mesh.position.z;
     if (dx * dx + dz * dz < PICKUP_RADIUS * PICKUP_RADIUS) {
       item.collected = true;
-      item.mesh.visible = false;
+      // Hide the meshes only. The glow light stays in the scene and stays
+      // *visible* — three.js skips invisible objects when gathering lights,
+      // so hiding it would change the scene's point-light count, invalidate
+      // the shader program cache, and recompile every material in the level
+      // (a multi-hundred-ms freeze). Zero intensity is free by comparison.
+      item.visuals.visible = false;
       item.glow.intensity = 0;
       collectibles.collected++;
       collectSound();
