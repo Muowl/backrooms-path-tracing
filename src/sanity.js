@@ -20,7 +20,7 @@ const REGEN_RATE = 16.0; // sanity/sec recovered in full light
 const BLACKOUT_RECOVERY = 55; // sanity restored after a blackout
 
 let heartbeatTimer = 0;
-let blackoutFlash = 0; // 1 → 0, drives a white-out fade on the HUD
+let blackoutFlash = 0; // 1 → 0, drives a fade-from-black flash on the HUD
 
 /**
  * Sample the light level at a world (x, z) position: the strongest safe-zone
@@ -112,7 +112,7 @@ export function getSanity01() {
   return sanity.value / sanity.max;
 }
 
-/** Current blackout white-out strength (1 → 0). */
+/** Current blackout flash strength (1 → 0), fading up from black. */
 export function getBlackoutFlash() {
   return blackoutFlash;
 }

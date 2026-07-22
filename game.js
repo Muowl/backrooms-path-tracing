@@ -36,6 +36,7 @@ import {
 const canvas = document.getElementById('game-canvas');
 const instructionsPanel = document.getElementById('instructions');
 const hud = document.getElementById('hud');
+const objectiveHud = document.getElementById('objective-hud');
 const fpsDisplay = document.getElementById('fps-counter');
 const ptStatusDisplay = document.getElementById('pt-status');
 const audioStatusDisplay = document.getElementById('audio-status');
@@ -103,6 +104,7 @@ if (instructionsPanel) {
 controls.addEventListener('lock', () => {
   if (instructionsPanel) instructionsPanel.style.display = 'none';
   if (hud) hud.style.display = 'block';
+  if (objectiveHud) objectiveHud.style.display = 'flex';
   // AudioContext can only start from a user gesture; entering pointer-lock
   // is one, so kick off (or resume) the procedural ambience here.
   initAudio();
@@ -112,6 +114,7 @@ controls.addEventListener('lock', () => {
 controls.addEventListener('unlock', () => {
   if (instructionsPanel) instructionsPanel.style.display = '';
   if (hud) hud.style.display = 'none';
+  if (objectiveHud) objectiveHud.style.display = 'none';
 });
 
 scene.add(controls.getObject());
@@ -283,7 +286,7 @@ function updateObjectiveHUD() {
     const hue = Math.round(getSanity01() * 90); // 0 (red) → 90 (yellow-green)
     sanityFill.style.background = `hsl(${hue}, 70%, 45%)`;
   }
-  // Blackout white-out flash driven by the sanity module.
+  // Blackout flash (fades up from black) driven by the sanity module.
   if (blackoutEl) {
     blackoutEl.style.opacity = getBlackoutFlash().toFixed(3);
   }
