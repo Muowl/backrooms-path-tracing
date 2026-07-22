@@ -27,6 +27,7 @@ export const BackroomsPostShader = {
     tDiffuse: { value: null },
     time: { value: 0.0 },
     resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    sanity: { value: 1.0 }, // 1 = calm, 0 = losing it
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -39,6 +40,7 @@ export const BackroomsPostShader = {
     uniform sampler2D tDiffuse;
     uniform float time;
     uniform vec2 resolution;
+    uniform float sanity;
 
     varying vec2 vUv;
 
@@ -50,8 +52,11 @@ export const BackroomsPostShader = {
     void main() {
       vec2 uv = vUv;
 
-      // --- Chromatic Aberration ---
-      float caStrength = 0.002;
+      // Fear rises as sanity falls; it amplifies every unsettling effect.
+      float fear = 1.0 - clamp(sanity, 0.0, 1.0);
+
+      // --- Chromatic Aberration (worsens with fear) ---
+      float caStrength = 0.002 + fear * 0.006;
       float dist = distance(uv, vec2(0.5));
       vec2 caOffset = (uv - 0.5) * caStrength * dist;
 
@@ -64,16 +69,17 @@ export const BackroomsPostShader = {
       // --- Warm color grading ---
       color *= vec3(1.04, 1.0, 0.94);
 
-      // Very slight desaturation for that aged look
+      // Desaturation deepens as sanity drains — the world goes grey.
       float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-      color = mix(vec3(luminance), color, 0.96);
+      color = mix(vec3(luminance), color, 0.96 - fear * 0.55);
 
-      // --- Film grain (path-tracer noise feel, centered around zero) ---
-      float noise = (grain(uv, time) - 0.5) * 0.05;
+      // --- Film grain (surges when afraid, path-tracer noise feel) ---
+      float noise = (grain(uv, time) - 0.5) * 0.05 * (1.0 + fear * 4.0);
       color += noise;
 
-      // --- Vignette (kept subtle — the DOM overlay adds its own) ---
-      float vig = 1.0 - dist * 0.45;
+      // --- Vignette (closes in and pulses like a heartbeat when afraid) ---
+      float pulse = fear * 0.08 * (0.5 + 0.5 * sin(time * 6.0));
+      float vig = 1.0 - dist * (0.45 + fear * 1.1 + pulse);
       vig = smoothstep(0.0, 1.0, vig);
       color *= vig;
 

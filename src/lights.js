@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { flickerLights } from './config.js';
+import { flickerLights, litFixtures } from './config.js';
 
 // ============================================================================
 // Fluorescent Light Fixtures
@@ -80,6 +80,19 @@ export function buildLights(scene) {
       pointLight.shadow.camera.far = 22;
     }
     scene.add(pointLight);
+
+    // Register this fixture as a sanity safe-zone. Bright fixtures project a
+    // wide safe radius; dim ones barely keep the dark at bay. Flickering
+    // lights carry a live reference so their safe-zone shrinks when they
+    // stutter (see updateSanity).
+    litFixtures.push({
+      x: lp.x,
+      z: lp.z,
+      radius: isDim ? 3.5 : 8.0,
+      strength: isDim ? 0.4 : 1.0,
+      light: pointLight,
+      baseIntensity: intensity,
+    });
 
     // Register flickering lights
     if (lp.flicker && !isDim) {
